@@ -14,21 +14,17 @@ interact with ads.
 1. Create a Firebase web app and enable Email/Password and Google under
 	Authentication sign-in providers.
 2. Copy `.env.example` to `.env.local` and fill in the web app configuration.
-3. Install the Firebase Admin SDK and configure Application Default Credentials
-	for the same Firebase project. Keep the service-account key outside this
-	repository.
+3. In Firebase Authentication settings, add the development host to authorized
+	domains if it is not already listed.
 
 ```sh
-python3 -m venv .venv
-.venv/bin/pip install -r requirements.txt
-export GOOGLE_APPLICATION_CREDENTIALS=/path/to/firebase-service-account.json
 npm install
 npm run dev
 ```
 
-Run the API in a second terminal with `.venv/bin/python backend.py`. Open the
+Run the API in a second terminal with `python3 backend.py`. Open the
 Vite URL printed by `npm run dev`. For a single production-style server, run
-`npm run build` followed by `.venv/bin/python backend.py` and open
+`npm run build` followed by `python3 backend.py` and open
 `http://localhost:8765`.
 
 ## Passive performance monitor

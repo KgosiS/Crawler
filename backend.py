@@ -5,6 +5,8 @@ import time
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlsplit
+from urllib.error import HTTPError, URLError
+from urllib.request import Request, urlopen
 
 from monitor import check
 
@@ -43,21 +45,43 @@ class DashboardHandler(SimpleHTTPRequestHandler):
             self.send_json(401, {"error": "Sign in to run a site check."})
             return False
 
-        try:
-            import firebase_admin
-            from firebase_admin import auth as firebase_auth
+        api_key = os.environ.get("VITE_FIREBASE_API_KEY")
+        if not api_key:
+            config_path = ROOT / ".env.local"
+            if config_path.is_file():
+                for line in config_path.read_text(encoding="utf-8").splitlines():
+                    name, separator, value = line.partition("=")
+                    if separator and name.strip() == "VITE_FIREBASE_API_KEY":
+                        api_key = value.strip().strip("\"'")
+                        break
 
-            try:
-                app = firebase_admin.get_app()
-            except ValueError:
-                app = firebase_admin.initialize_app()
-        except Exception:
-            self.send_json(503, {"error": "Firebase Admin is not configured on the server."})
+        if not api_key:
+            self.send_json(503, {"error": "Firebase web configuration is missing on the server."})
             return False
 
         try:
-            firebase_auth.verify_id_token(token, app=app, check_revoked=True)
-        except Exception:
+            request = Request(
+                f"https://identitytoolkit.googleapis.com/v1/accounts:lookup?key={api_key}",
+                data=json.dumps({"idToken": token}).encode("utf-8"),
+                headers={"Content-Type": "application/json"},
+            )
+            with urlopen(request, timeout=10) as response:
+                user_data = json.loads(response.read())
+        except HTTPError as error:
+            try:
+                firebase_error = json.loads(error.read()).get("error", {}).get("message", "")
+            except (json.JSONDecodeError, AttributeError):
+                firebase_error = ""
+            if firebase_error in {"INVALID_ID_TOKEN", "TOKEN_EXPIRED", "USER_DISABLED"}:
+                self.send_json(401, {"error": "Your sign-in has expired. Please sign in again."})
+            else:
+                self.send_json(503, {"error": "Firebase could not validate the sign-in right now."})
+            return False
+        except (URLError, TimeoutError, OSError, json.JSONDecodeError):
+            self.send_json(503, {"error": "Firebase could not validate the sign-in right now."})
+            return False
+
+        if not user_data.get("users"):
             self.send_json(401, {"error": "Your sign-in has expired. Please sign in again."})
             return False
         return True
