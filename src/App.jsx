@@ -47,6 +47,13 @@ function formatLatency(value) {
   return typeof value === "number" ? `${Math.round(value)} ms` : "--";
 }
 
+function getAuthErrorMessage(error) {
+  if (error.code === "auth/unauthorized-domain") {
+    return `Add ${window.location.hostname} to Firebase Authentication > Settings > Authorized domains, then reload this page.`;
+  }
+  return error.message.replace("Firebase: ", "");
+}
+
 function AuthScreen() {
   const [mode, setMode] = useState("login");
   const [showPassword, setShowPassword] = useState(false);
@@ -66,7 +73,7 @@ function AuthScreen() {
         await createUserWithEmailAndPassword(auth, email, password);
       }
     } catch (authError) {
-      setError(authError.message.replace("Firebase: ", ""));
+      setError(getAuthErrorMessage(authError));
     } finally {
       setBusy(false);
     }
@@ -78,7 +85,7 @@ function AuthScreen() {
     try {
       await signInWithPopup(auth, googleProvider);
     } catch (authError) {
-      setError(authError.message.replace("Firebase: ", ""));
+      setError(getAuthErrorMessage(authError));
     } finally {
       setBusy(false);
     }
