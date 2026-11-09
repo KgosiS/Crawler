@@ -216,7 +216,14 @@ function Dashboard({ user }) {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
       });
-      const payload = await response.json();
+      let payload;
+      try {
+        payload = await response.json();
+      } catch {
+        throw new Error(
+          `The check service returned an unexpected response (HTTP ${response.status}). Verify that the API is deployed and try again.`,
+        );
+      }
       if (!response.ok) throw new Error(payload.error || "The check could not be started.");
       setRuns((current) => [payload, ...current].slice(0, 20));
       if (payload.error) {
