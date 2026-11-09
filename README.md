@@ -17,6 +17,8 @@ interact with ads.
 3. In Firebase Authentication settings, add the development host to authorized
 	domains if it is not already listed.
 
+For the production deployment, add `crawler-ashy.vercel.app` (hostname only,
+without `https://`) under Authentication > Settings > Authorized domains.
 For this Codespaces preview, add
 `glorious-parakeet-69gvgx9j44jjcrg9g-5173.app.github.dev` (hostname only, no
 scheme or port) under Authentication > Settings > Authorized domains. For a
